@@ -1,0 +1,22 @@
+---
+name: Linting - YAML
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**.yml"
+      - "**.yaml"
+
+jobs:
+  yamllint:
+    name: yamllint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+      - name: Run yamllint
+        uses: reviewdog/action-yamllint@v1.6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
