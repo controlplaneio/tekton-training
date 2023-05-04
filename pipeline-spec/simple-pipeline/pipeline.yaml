@@ -1,0 +1,41 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: demo-tekton-pipeline
+spec:
+  description: |
+    The Pipeline clones the repository, builds the demo-app container image and pushes it to the target OCI registry (e.g. Docker Hub). 
+  params:
+  - name: repo-url
+    type: string
+  - name: image-reference
+    type: string
+  - name: app-path
+    type: string
+  workspaces:
+  - name: shared-data
+  - name: docker-credentials
+  tasks:
+  - name: fetch-source
+    taskRef:
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: shared-data
+    params:
+    - name: url
+      value: $(params.repo-url)
+  - name: build-push
+    runAfter: ["fetch-source"]
+    taskRef:
+      name: kaniko
+    workspaces:
+    - name: source
+      workspace: shared-data
+    - name: dockerconfig
+      workspace: docker-credentials
+    params:
+    - name: IMAGE
+      value: $(params.image-reference)
+    - name: CONTEXT
+      value: $(params.app-path)
