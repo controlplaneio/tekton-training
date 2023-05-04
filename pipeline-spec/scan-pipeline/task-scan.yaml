@@ -1,0 +1,18 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: scanner
+spec:
+  description: Scan container image with Trivy
+  workspaces:
+  - name: source
+  params:
+    - name: IMAGE_TAR
+      description: Kaniko tar image to be scanned
+      type: string
+  steps:
+  - name: scan
+    image: docker.io/aquasec/trivy
+    script: | 
+      #!/usr/bin/env sh
+      trivy image --severity HIGH, CRITICAL --exit-code 1 --input $(workspaces.source.path)/$(params.IMAGE_TAR)

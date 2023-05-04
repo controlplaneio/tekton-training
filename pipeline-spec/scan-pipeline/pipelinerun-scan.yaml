@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: demo-tekton-pipeline-
+spec:
+  pipelineRef:
+    name: demo-tekton-pipeline-scan
+  podTemplate:
+    securityContext:
+      fsGroup: 65532
+  workspaces:
+  - name: shared-data
+    persistentVolumeClaim:
+      claimName: tekton-pvc
+  - name: docker-credentials
+    secret:
+      secretName: docker-credentials
+  params:
+  - name: repo-url
+    value: <demo tekton pipeline forked source repository>
+  - name: image-reference
+    value: index.docker.io/<your dockerhub username>/demo-app:1.0.0
+  - name: app-path
+    value: ./app-spec/

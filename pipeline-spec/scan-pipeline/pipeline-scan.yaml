@@ -1,0 +1,67 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: demo-tekton-pipeline-scan
+spec:
+  description: |
+    The Pipeline clones the repository, builds the demo-app container image, scans it with Trivy, and pushes it to the OCI registry (e.g. Docker Hub) if no HIGH or CRITICAL vulnerabilities are found. 
+  params:
+  - name: repo-url
+    type: string
+  - name: image-reference
+    type: string
+  - name: app-path
+    type: string
+  workspaces:
+  - name: shared-data
+  - name: docker-credentials
+  tasks:
+  - name: fetch-source
+    taskRef:
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: shared-data
+    params:
+    - name: url
+      value: $(params.repo-url)
+  - name: build-only
+    runAfter: ["fetch-source"]
+    taskRef:
+      name: kaniko
+    workspaces:
+    - name: source
+      workspace: shared-data
+    - name: dockerconfig
+      workspace: docker-credentials
+    params:
+    - name: IMAGE
+      value: $(params.image-reference)
+    - name: CONTEXT
+      value: $(params.app-path)
+    - name: EXTRA_ARGS
+      value: ["--no-push", "--tarPath=image.tar"]
+  - name: scan
+    runAfter: ["build-only"]
+    taskRef:
+      name: scanner
+    workspaces:
+    - name: source
+      workspace: shared-data
+    params:
+    - name: IMAGE_TAR
+      value: image.tar
+  - name: build-push
+    runAfter: ["scan"]
+    taskRef:
+      name: kaniko
+    workspaces:
+    - name: source
+      workspace: shared-data
+    - name: dockerconfig
+      workspace: docker-credentials
+    params:
+    - name: IMAGE
+      value: $(params.image-reference)
+    - name: CONTEXT
+      value: $(params.app-path)
